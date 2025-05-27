@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XI-ASAT-TAHFIDZ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f8f8f8;
+}
+#timer {
+  background-color: #FF5403;
+  color: white;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 0 0 10px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.info-section {
+  margin: 5px 10px;
+}
+#form {
+  display: none;
+}
+iframe {
+  width: 100%;
+  height: calc(100vh - 70px);
+  border: none;
+}
+#not-ready {
+  text-align: center;
+  padding: 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ff5403;
+}
+@media screen and (max-width: 600px) {
+  #timer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+  </style>
+</head>
+<body>
+  <audio id="warning-sound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto"></audio>
+
+  <div id="timer">
+<div class="info-section"><i class="fa fa-book"></i> ASAT</div>
+<div class="info-section"><i class="fa fa-calendar"></i> Mulai: <span id="start-date"></span></div>
+<div class="info-section"><i class="fa fa-clock-o"></i> Timer: <span id="time">--:--</span></div>
+  </div>
+
+  <div id="not-ready">Menghubungkan ke server waktu...</div>
+
+  <div id="form">
+<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSf3z81ziLIZ1vb5DiC3f8ZwjRHrREiea6nalBNDdYOKwAR31w/viewform?usp=dialog?embedded=true" allowfullscreen>
+  LOADING
+</iframe>
+  </div>
+
+  <script>
+const waktuMulaiResmi = new Date("2025-05-28T00:00:00.000+00:00");
+const durasiUjian = 5400;
+const maxTampil = durasiUjian + 60 * 5;
+const peringatanDetik = 300;
+
+function formatTanggalIndo(date) {
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('id-ID', options) + ' ' + date.toLocaleTimeString('id-ID');
+}
+
+async function dapatkanWaktuServer() {
+  try {
+    const res = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const data = await res.json();
+    return new Date(data.datetime);
+  } catch {
+    return new Date();
+  }
+}
+
+async function mulaiSistem() {
+  const serverNow = await dapatkanWaktuServer();
+  document.getElementById('start-date').textContent = formatTanggalIndo(serverNow);
+  
+  if (serverNow >= waktuMulaiResmi) {
+    document.getElementById('form').style.display = 'block';
+    document.getElementById('not-ready').style.display = 'none';
+    mulaiTimer();
+  } else {
+    document.getElementById('not-ready').textContent = Ujian akan dimulai pada: ${formatTanggalIndo(waktuMulaiResmi)};
+  }
+}
+
+function mulaiTimer() {
+  const display = document.getElementById('time');
+  const audio = document.getElementById('warning-sound');
+  let startTime = Date.now();
+  
+  const update = () => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const sisaDetik = durasiUjian - elapsed;
+    
+    if (sisaDetik <= peringatanDetik && sisaDetik > 0) {
+      audio.play();
+    }
+    
+    if (sisaDetik <= 0) {
+      display.textContent = "WAKTU UJIAN SUDAH SELESAI|TERSISA 2 MENIT UNTUK KIRIM JAWABAN SEBELUM AKSES SOAL DITUTUP";
+      if (sisaDetik <= -120) {
+        document.getElementById('form').style.display = 'none';
+      }
+      return;
+    }
+    
+    const menit = Math.floor(sisaDetik / 60);
+    const detik = sisaDetik % 60;
+    display.textContent = ${menit.toString().padStart(2, '0')}:${detik.toString().padStart(2, '0')};
+  };
+  
+  setInterval(update, 1000);
+  update();
+}
+
+window.onload = mulaiSistem;
+  </script>
+</body>
+</html>
